@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAR Auto-Drafting — System Architecture</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: #ffffff;
+      display: flex;
+      justify-content: center;
+      padding: 48px 24px 60px;
+      min-height: 100vh;
+      color: #1a1a2e;
+    }
+
+    /* ===================== OUTER LAYOUT ===================== */
+    .page-layout {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .diagram-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .main-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ===================== SECTION BOX ===================== */
+    .section-box {
+      border: 1.5px solid #b8b8b8;
+      border-radius: 16px;
+      padding: 32px 28px 22px 28px;
+      position: relative;
+      min-width: 720px;
+      background: #f5f5f6;
+    }
+
+    .section-box .section-title {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f5f5f6;
+      padding: 0 14px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #1a1a2e;
+      white-space: nowrap;
+    }
+
+    .section-box .layer-label {
+      position: absolute;
+      top: -14px;
+      left: 20px;
+      background: #f5f5f6;
+      padding: 0 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #7a7a8e;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .section-box .pills {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 11px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    /* ===================== TECH TAG ===================== */
+    .tech-tag {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 500;
+      opacity: 0.82;
+      margin-top: 3px;
+      letter-spacing: 0.2px;
+      color: rgba(255,255,255,0.88);
+    }
+
+    /* ===================== PILLS ===================== */
+    .pill {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px 9px;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      min-width: 140px;
+      max-width: 210px;
+      line-height: 1.35;
+    }
+
+    /* Layer 1 — Data Ingestion */
+    .bg-l1-green   { background-color: #6b8e3a; }
+    .bg-l1-rust    { background-color: #b85c2a; }
+    .bg-l1-dark    { background-color: #6e3530; }
+
+    /* Layer 2 — Intelligence Engine */
+    .bg-l2-green   { background-color: #6b8e3a; }
+    .bg-l2-rust    { background-color: #9a5535; }
+    .bg-l2-teal    { background-color: #2a7058; }
+
+    /* Layer 3 — Generative Drafting */
+    .bg-l3-teal    { background-color: #1b6b52; }
+    .bg-l3-brown   { background-color: #9a4232; }
+    .bg-l3-olive   { background-color: #5a6c24; }
+
+    /* Layer 4 — Governance & Audit */
+    .bg-l4-orange  { background-color: #c07a38; }
+    .bg-l4-brown   { background-color: #5c3828; }
+    .bg-l4-dark    { background-color: #3e503a; }
+    .bg-l4-red     { background-color: #b54535; }
+
+    /* Layer 5 — Human-in-the-Loop */
+    .bg-l5-blue    { background-color: #336c9e; }
+    .bg-l5-indigo  { background-color: #3a5498; }
+
+    /* ===================== ARROWS ===================== */
+    .arrow-down {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 38px;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .arrow-down-svg { width: 24px; height: 34px; }
+
+    /* ===================== SECURITY PERIMETER ===================== */
+    .security-perimeter {
+      border: 2.5px dashed #5a7bad;
+      border-radius: 22px;
+      padding: 18px 14px 16px 14px;
+      position: relative;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .security-perimeter-label {
+      position: absolute;
+      top: -13px;
+      right: 28px;
+      background: #fff;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #3a6090;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .security-perimeter-label .lock-icon {
+      font-size: 13px;
+    }
+
+    /* ===================== EVIDENCE LOOP ===================== */
+    .evidence-loop-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .evidence-loop {
+      position: absolute;
+      left: -58px;
+      top: 0;
+      bottom: 0;
+      width: 52px;
+      pointer-events: none;
+    }
+
+    .evidence-loop-label {
+      position: absolute;
+      left: -110px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #b54535;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ===================== AI ROW + SIDE BOX ===================== */
+    .ai-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: center;
+    }
+    .ai-row .section-box { flex-shrink: 0; }
+
+    .ai-connector {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+    .ai-connector svg { width: 48px; height: 22px; }
+
+    /* ===================== SIDE BOXES ===================== */
+    .deployment-box {
+      border: 1.8px solid #a0a8b5;
+      border-radius: 10px;
+      padding: 20px 24px;
+      background: #fff;
+      width: 270px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .deployment-box h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a2e;
+      text-align: center;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .deployment-box ul {
+      list-style: none;
+      padding: 0; margin: 0;
+    }
+    .deployment-box ul li {
+      font-size: 13px;
+      color: #2a2a3a;
+      padding: 3.5px 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .deployment-box ul li::before {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background-color: #336c9e;
+      flex-shrink: 0;
+    }
+
+    /* ===================== SECURITY BADGE ===================== */
+    .security-badge {
+      position: absolute;
+      bottom: -20px;
+      right: -310px;
+      width: 285px;
+      border: 1.5px solid #c4cdd6;
+      border-radius: 10px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, #f8fafb 0%, #eef2f6 100%);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .security-badge-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .shield-icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .security-badge-header span {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2a5080;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .security-badge p {
+      font-size: 11px;
+      color: #3a3a4a;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .security-badge .highlight {
+      font-weight: 600;
+      color: #2a5080;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-layout">
+    <div class="diagram-wrapper">
+      <div class="main-flow">
+
+        <!-- ============================================================ -->
+        <!-- LAYER 1 — Data Ingestion (Source)                            -->
+        <!-- ============================================================ -->
+        <div class="section-box">
+          <span class="layer-label">Layer 1</span>
+          <span class="section-title">Data Ingestion (Source)</span>
+          <div class="pills">
+            <div class="pill bg-l1-green">
+              Transaction Alerts
+              <span class="tech-tag">Real-time Streams</span>
+            </div>
+            <div class="pill bg-l1-rust">
+              KYC Data
+              <span class="tech-tag">Customer Profiles</span>
+            </div>
+            <div class="pill bg-l1-dark">
+              Account Metadata
+              <span class="tech-tag">Accounts &amp; Txn History</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div class="arrow-down">
+          <svg class="arrow-down-svg" viewBox="0 0 24 34" fill="none">
+            <rect x="8" y="0" width="8" height="20" fill="#336c9e"/>
+            <polygon points="12,34 1,20 23,20" fill="#336c9e"/>
+          </svg>
+        </div>
+
+        <!-- ============================================================ -->
+        <!--  SECURITY PERIMETER — wraps Layers 2, 3, 4                   -->
+        <!-- ============================================================ -->
+        <div class="security-perimeter">
+          <span class="security-perimeter-label">
+            <span class="lock-icon">&#128274;</span>
+            Isolated VPC / PrivateLink
+          </span>
+
+          <!-- ======== LAYER 2 — Intelligence Engine (Processing) ======== -->
+          <div class="section-box">
+            <span class="layer-label">Layer 2</span>
+            <span class="section-title">Intelligence Engine (Processing)</span>
+            <div class="pills">
+              <div class="pill bg-l2-green">
+                Heuristic Rule Engine
+                <span class="tech-tag">Pattern Matching</span>
+              </div>
+              <div class="pill bg-l2-rust">
+                Pattern Recognition
+                <span class="tech-tag">ML Anomaly Detection</span>
+              </div>
+              <div class="pill bg-l2-teal">
+                Amazon OpenSearch
+                <span class="tech-tag">Guideline Retrieval (RAG)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="arrow-down">
+            <svg class="arrow-down-svg" viewBox="0 0 24 34" fill="none">
+              <rect x="8" y="0" width="8" height="20" fill="#336c9e"/>
+              <polygon points="12,34 1,20 23,20" fill="#336c9e"/>
+            </svg>
+          </div>
+
+          <!-- ======== LAYER 3 — Generative Drafting (Output) ======== -->
+          <div class="ai-row">
+            <div class="section-box">
+              <span class="layer-label">Layer 3</span>
+              <span class="section-title">Generative Drafting (Output)</span>
+              <div class="pills">
+                <div class="pill bg-l3-teal">
+                  Amazon Bedrock<br>(Claude 3.5)
+                  <span class="tech-tag">LLM Narrative Gen</span>
+                </div>
+                <div class="pill bg-l3-brown">
+                  Source-Grounded<br>Prompting
+                  <span class="tech-tag">Evidence-Linked Output</span>
+                </div>
+                <div class="pill bg-l3-olive">
+                  Prompt Governance<br>Module
+                  <span class="tech-tag">Guardrails &amp; Filters</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Arrow Right -->
+            <div class="ai-connector">
+              <svg viewBox="0 0 48 22" fill="none">
+                <rect x="0" y="7" width="32" height="8" fill="#336c9e"/>
+                <polygon points="48,11 32,1 32,21" fill="#336c9e"/>
+              </svg>
+            </div>
+
+            <!-- Deployment Side Box -->
+            <div class="deployment-box">
+              <h3>Scalable &amp; Environment-Aware Deployment</h3>
+              <ul>
+                <li>Containerized Services</li>
+                <li>Cloud / On-Prem Options</li>
+                <li>Horizontal Scalability</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="arrow-down">
+            <svg class="arrow-down-svg" viewBox="0 0 24 34" fill="none">
+              <rect x="8" y="0" width="8" height="20" fill="#336c9e"/>
+              <polygon points="12,34 1,20 23,20" fill="#336c9e"/>
+            </svg>
+          </div>
+
+          <!-- ======== LAYER 4 — Governance & Audit ("Killer Feature") ======== -->
+          <div class="section-box">
+            <span class="layer-label">Layer 4</span>
+            <span class="section-title">Governance &amp; Audit</span>
+            <div class="pills">
+              <div class="pill bg-l4-orange">
+                Immutable<br>Audit Logs
+                <span class="tech-tag">Tamper-proof Records</span>
+              </div>
+              <div class="pill bg-l4-brown">
+                Chain-of-Thought<br>(CoT) Tracking
+                <span class="tech-tag">Reasoning Lineage</span>
+              </div>
+              <div class="pill bg-l4-dark">
+                Version Control
+                <span class="tech-tag">Model &amp; Draft Versions</span>
+              </div>
+              <div class="pill bg-l4-red">
+                Traceability Logs
+                <span class="tech-tag">Full Evidence Trail</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /security-perimeter -->
+
+        <!-- Arrow -->
+        <div class="arrow-down">
+          <svg class="arrow-down-svg" viewBox="0 0 24 34" fill="none">
+            <rect x="8" y="0" width="8" height="20" fill="#336c9e"/>
+            <polygon points="12,34 1,20 23,20" fill="#336c9e"/>
+          </svg>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- LAYER 5 — Human-in-the-Loop (Approval)                      -->
+        <!-- EVIDENCE LOOP wraps Layer 4 ↔ Layer 5                        -->
+        <!-- ============================================================ -->
+        <div class="evidence-loop-wrapper">
+
+          <!-- Evidence Loop SVG (left-side curved arrow) -->
+          <svg class="evidence-loop" viewBox="0 0 52 240" fill="none" preserveAspectRatio="none">
+            <!-- upward path from bottom to top, curving left -->
+            <path d="M 48 230 C 48 230, 8 200, 8 120 C 8 40, 48 10, 48 10"
+                  stroke="#b54535" stroke-width="2.5" fill="none"
+                  stroke-dasharray="6 4"/>
+            <!-- arrowhead at top -->
+            <polygon points="48,10 38,22 50,20" fill="#b54535"/>
+          </svg>
+          <span class="evidence-loop-label">Evidence Loop</span>
+
+          <div class="section-box" style="width: 100%; min-width: 720px;">
+            <span class="layer-label">Layer 5</span>
+            <span class="section-title">Human-in-the-Loop (Approval)</span>
+            <div class="pills">
+              <div class="pill bg-l5-blue">
+                Streamlit Dashboard
+                <span class="tech-tag">Review &amp; Approve</span>
+              </div>
+              <div class="pill bg-l5-blue">
+                Edit &amp; Track Changes
+                <span class="tech-tag">Inline Redlining</span>
+              </div>
+              <div class="pill bg-l5-indigo">
+                Lineage Score
+                <span class="tech-tag">Confidence &amp; Sources</span>
+              </div>
+              <div class="pill bg-l5-blue">
+                SAR Approval Workflow
+                <span class="tech-tag">Multi-level Sign-off</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /evidence-loop-wrapper -->
+
+      </div><!-- /main-flow -->
+    </div><!-- /diagram-wrapper -->
+
+    <!-- ===================== SECURITY BADGE (bottom-right) ===================== -->
+    <div class="security-badge" style="position: relative; bottom: auto; right: auto; margin-top: 32px; align-self: flex-end;">
+      <div class="security-badge-header">
+        <!-- Shield SVG icon -->
+        <svg class="shield-icon" viewBox="0 0 28 28" fill="none">
+          <path d="M14 2 L3 7 V14 C3 20.5 7.5 26 14 28 C20.5 26 25 20.5 25 14 V7 L14 2Z" fill="#2a5080" opacity="0.12" stroke="#2a5080" stroke-width="1.5"/>
+          <path d="M10 14.5 L13 17.5 L19 11" stroke="#2a5080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <span>Zero-Trust Architecture</span>
+      </div>
+      <p>
+        Architecture follows <span class="highlight">Zero-Trust Principles</span>: Data is encrypted at rest
+        (<span class="highlight">KMS</span>) and processed in a <span class="highlight">stateless environment</span>
+        to prevent cross-domain leakage.
+      </p>
+    </div>
+
+  </div><!-- /page-layout -->
+</body>
+</html>
